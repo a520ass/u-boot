@@ -1,0 +1,23 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2022 7Ji
+ * Author: Guoxin "7Ji" Pu <pugokushin@gmail.com>
+ */
+
+
+#include "meson-gxl-s905x-p212.dts"
+
+/{
+    model = "Amlogic Meson GXL (S905L) BesTV R3300L";
+
+    memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x0 0x0 0x40000000>;
+	};
+
+    emmc@d0074000 {
+        emmc {
+            caps2 = "MMC_CAP2_HS200";
+        };
+    };
+};
