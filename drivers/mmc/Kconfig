@@ -194,6 +194,18 @@ config SPL_MMC_HS200_SUPPORT
 	  The HS200 mode is support by some eMMC. The bus frequency is up to
 	  200MHz. This mode requires tuning the IO.
 
+config MMC_HS_LIMIT_26
+	bool "limits MMC_HS frequency to 26Mhz"
+	help
+	  On certain S905L3A-B powered boxes, the eMMC during BL33 can only
+	  go as high as 26Mhz before they become in-reponsive. This happens
+	  during we test out each possible frequencies and there is no way
+	  going back.
+	  Selecting this will make u-boot just skip all higher frequencies
+	  to avoid the eMMC chip faking their death.
+	  DO NOT select this on other devices as this will strongly limit
+	  the MMC card speed.
+
 config MMC_VERBOSE
 	bool "Output more information about the MMC"
 	default y
