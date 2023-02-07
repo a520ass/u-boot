@@ -1,0 +1,32 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2022 Guoxin "7Ji" Pu 
+ */
+
+/dts-v1/;
+
+#include "meson-gxbb-p20x.dtsi"
+
+/ {
+	compatible = "xiaomi,mdz-16-aa", "xiaomi,mibox3/3c","amlogic,p201", "amlogic,meson-gxbb";
+	model = "Xiaomi MiBox 3/3C (CN ver. MDZ-16-AA)";
+};
+
+/* Wireless SDIO Module, not needed during early boot */
+&sd_emmc_a {
+	status = "disabled";
+};
+
+/* SD card */
+&sd_emmc_b {
+	status = "disabled";
+};
+
+/* Only USB0 is wired out, USB1 is not wired at all */
+&usb1_phy {
+	status = "disabled";
+};
+
+&usb1 {
+	status = "disabled";
+};
