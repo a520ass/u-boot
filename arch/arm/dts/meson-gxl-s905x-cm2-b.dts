@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2023 Guoxin "7Ji" Pu
+ */
+
+#include "meson-gxl-s905x-khadas-vim.dts"
+
+/ {
+	compatible = "cumebox,cm2-b", "amlogic,s905x", "amlogic,meson-gxl";
+	model = "CumeBox CM2-B";
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x00 0x00 0x00 0x40000000>;
+	};
+
+	smbios {
+		compatible = "u-boot,sysinfo-smbios";
+
+		smbios {
+			system {
+				manufacturer = "CumeBox";
+				product = "CM2-B";
+			};
+
+			baseboard {
+				manufacturer = "CumeBox";
+				product = "CM2-B";
+			};
+
+			chassis {
+				manufacturer = "CumeBox";
+				product = "CM2-B";
+			};
+		};
+	};
+};
+
+/* Wi-Fi is not needed for early boot */
+&sd_emmc_a {
+	status = "disabled";
+};
