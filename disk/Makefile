@@ -17,4 +17,5 @@ obj-$(CONFIG_$(SPL_TPL_)DOS_PARTITION)   += part_dos.o
 obj-$(CONFIG_$(SPL_TPL_)ISO_PARTITION)   += part_iso.o
 obj-$(CONFIG_$(SPL_TPL_)AMIGA_PARTITION) += part_amiga.o
 obj-$(CONFIG_$(SPL_TPL_)EFI_PARTITION)   += part_efi.o
+obj-$(CONFIG_$(SPL_TPL_)ENV_PARTITION)   += part_env.o
 endif
