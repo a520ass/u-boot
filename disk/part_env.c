@@ -56,10 +56,10 @@ static char *part_get_definition_env(struct blk_desc *dev_desc)
 		return NULL;
 	}
 	if (uclass_name[0] == '(') {
-		pr_err("uclass name '%s' for uclass_id %s devnum %s is not acceptable\n", uclass_name, dev_desc->uclass_id, dev_desc->devnum);
+		pr_err("uclass name '%s' for uclass_id %d devnum %d is not acceptable\n", uclass_name, dev_desc->uclass_id, dev_desc->devnum);
 		return NULL;
 	}
-	snprintf(env_key + PART_ENV_KEY_PREFIX_LEN, PART_ENV_KEY_SUFFIX_MAX_LEN, "%s%d");
+	snprintf(env_key + PART_ENV_KEY_PREFIX_LEN, PART_ENV_KEY_SUFFIX_MAX_LEN, "%s%d", uclass_name, dev_desc->devnum);
 	pr_debug("Parsing parts from u-boot env '%s'\n", env_key);
 	env_definition = env_get(env_key);
 	if (!env_definition) {
@@ -72,9 +72,7 @@ static char *part_get_definition_env(struct blk_desc *dev_desc)
 static int part_get_definition_part(struct blk_desc *dev_desc, int part, struct part_env *part_env)
 {
 	char *env_definition = part_get_definition_env(dev_desc);
-	ulong offset = 0;
 	ulong const size_total = dev_desc->lba * dev_desc->blksz;
-	char part_definition_part[PART_DEFINITION_PART_MAX_LEN];
 	char *part_definition_start = NULL;
 	char *bracket_left = NULL;
 	char *bracket_right = NULL;
@@ -252,7 +250,7 @@ static int part_get_definition_part(struct blk_desc *dev_desc, int part, struct 
 			default:
 				if (!part_definition_start) {
 					if (++part_id > part) {
-						pr_err("Partition number '%d' does not exist in env '%s'\n", env_definition);
+						pr_err("Partition number '%d' does not exist in env '%s'\n", part_id, env_definition);
 						return -1;
 					}
 					if (part_id == part) {
