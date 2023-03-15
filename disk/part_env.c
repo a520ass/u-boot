@@ -138,39 +138,38 @@ static int part_get_definition_part(struct blk_desc *dev_desc, int part, struct 
 				if (offset_at) {
 					offset_this = simple_strtoul(offset_at + 1, &size_end, 10);
 					switch (*size_end) {
-						case 'K':
-						case 'k':
-							size_this *= 0x400UL;
-							break;
-						case 'M':
-						case 'm':
-							size_this *= 0x100000UL;
-							break;
-						case 'G':
-						case 'g':
-							size_this *= 0x40000000UL;
-							break;
-						case 'T':
-						case 't':
-							size_this *= 0x10000000000UL;
-							break;
-						case 'P':
-						case 'p':
-							size_this *= 0x4000000000000UL;
-							break;
-						case 'E':
-						case 'e':
-							size_this *= 0x1000000000000000UL;
-							break;
-						case ',':
-						case '(':
-						case '\0':
-							break;
-						default:
-							pr_err("Partition %d has a unrecognized suffix '%c' in offset in env '%s'\n", part_id, *size_end, env_definition);
-							return -1;
-						}
+					case 'K':
+					case 'k':
+						offset_this *= 0x400UL;
 						break;
+					case 'M':
+					case 'm':
+						offset_this *= 0x100000UL;
+						break;
+					case 'G':
+					case 'g':
+						offset_this *= 0x40000000UL;
+						break;
+					case 'T':
+					case 't':
+						offset_this *= 0x10000000000UL;
+						break;
+					case 'P':
+					case 'p':
+						offset_this *= 0x4000000000000UL;
+						break;
+					case 'E':
+					case 'e':
+						offset_this *= 0x1000000000000000UL;
+						break;
+					case ',':
+					case '(':
+					case '\0':
+						break;
+					default:
+						pr_err("Partition %d has a unrecognized suffix '%c' in offset in env '%s'\n", part_id, *size_end, env_definition);
+						return -1;
+					}
 				} else {
 					offset_this = end_last;
 				}
@@ -180,9 +179,9 @@ static int part_get_definition_part(struct blk_desc *dev_desc, int part, struct 
 				}
 				end_last = size_this + offset_this;
 				if (end_last > size_total) {
-					pr_warn("Partition %d's end exceeds disk's end in env '%s', shrink size down\n", part_id, env_definition);
-					size_this -= (end_last - size_total);
+					pr_warn("Partition %d's end %lu exceeds disk's size %lu in env '%s', shrink size down\n", part_id, end_last, size_total, env_definition);
 					end_last = size_total;
+					size_this = end_last - offset_this;
 				}
 				if (size_this % PART_ENV_SECTOR_SIZE) {
 					pr_err("Partition %d's size %lu is not a multiply of base sector size %d in env '%s'\n", part_id, size_this, PART_ENV_SECTOR_SIZE, env_definition);
@@ -240,12 +239,10 @@ static int part_get_definition_part(struct blk_desc *dev_desc, int part, struct 
 				break;
 			case '@':
 				if (offset_at) {
-					if (offset_at) {
-						pr_err("Multiple occurance of '@' in single entry: '%s'\n", env_definition);
-						return -1;
-					}
-					offset_at = c;
+					pr_err("Multiple occurance of '@' in singloffset_ate entry: '%s'\n", env_definition);
+					return -1;
 				}
+				offset_at = c;
 				break;
 			default:
 				if (!part_definition_start) {
@@ -263,6 +260,7 @@ static int part_get_definition_part(struct blk_desc *dev_desc, int part, struct 
 					part_definition_start = c;
 					size_this = 0;
 					offset_this = 0;
+					offset_at = NULL;
 				}
 				break;
 		}
@@ -280,6 +278,7 @@ static int __maybe_unused part_get_info_env(struct blk_desc *dev_desc, int part,
 	info->blksz = PART_ENV_SECTOR_SIZE;
 	info->start = part_env.offset / PART_ENV_SECTOR_SIZE;
 	info->size = part_env.size / PART_ENV_SECTOR_SIZE;
+	strcpy((char *)info->type, "U-Boot");
 	return 0;
 }
 
