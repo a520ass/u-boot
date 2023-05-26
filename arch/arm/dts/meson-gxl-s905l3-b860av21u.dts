@@ -1,0 +1,38 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright (c) 2023 hefeng
+ */
+
+
+#include "meson-gxl-s905x-p212.dts"
+
+/{
+	model = "Amlogic Meson GXL (S905L3) ZTE B860AV21U";
+
+	memory@0 {
+		device_type = "memory";
+		reg = <0x0 0x0 0x0 0x40000000>;
+	};
+
+};
+
+/* SDIO */
+&sd_emmc_a {
+	// We don't need the wireless card when booting
+	status = "disabled";
+};
+
+/* eMMC */
+&sd_emmc_c {
+	status = "okay";
+	// Hack from https://github.com/KryptonLee/u-boot-e900v22c/commit/9d9a471c720259a8c541c5b6ccbbb57c82bf30c9, cite: "The eMMC of SKYWORTH E900V22C TV-Box has MMC_HS200 and MMC_HS_52 modes in its caps, however it will lose control when the bus frequency is set to 52MHz or higher."
+	/delete-property/ mmc-hs200-1_8v;
+	/delete-property/ mmc-ddr-1_8v;
+	max-frequency = <50000000>; 
+};
+
+/* This is connected to the Bluetooth module: */
+&uart_A {
+	status = "okay";
+	/delete-node/ bluetooth;
+};
