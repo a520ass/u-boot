@@ -6,17 +6,18 @@
 
 #include <common.h>
 #include <nand.h>
+#include <system-constants.h>
 #include <asm/io.h>
 #include <linux/mtd/nand_ecc.h>
 #include <linux/mtd/rawnand.h>
 
-static int nand_ecc_pos[] = CONFIG_SYS_NAND_ECCPOS;
+static int nand_ecc_pos[] = CFG_SYS_NAND_ECCPOS;
 static struct mtd_info *mtd;
 static struct nand_chip nand_chip;
 
 #define ECCSTEPS	(CONFIG_SYS_NAND_PAGE_SIZE / \
-					CONFIG_SYS_NAND_ECCSIZE)
-#define ECCTOTAL	(ECCSTEPS * CONFIG_SYS_NAND_ECCBYTES)
+					CFG_SYS_NAND_ECCSIZE)
+#define ECCTOTAL	(ECCSTEPS * CFG_SYS_NAND_ECCBYTES)
 
 
 #if (CONFIG_SYS_NAND_PAGE_SIZE <= 512)
@@ -27,7 +28,7 @@ static int nand_command(int block, int page, uint32_t offs,
 	u8 cmd)
 {
 	struct nand_chip *this = mtd_to_nand(mtd);
-	int page_addr = page + block * CONFIG_SYS_NAND_PAGE_COUNT;
+	int page_addr = page + block * SYS_NAND_BLOCK_PAGES;
 
 	while (!this->dev_ready(mtd))
 		;
@@ -59,7 +60,7 @@ static int nand_command(int block, int page, uint32_t offs,
 	u8 cmd)
 {
 	struct nand_chip *this = mtd_to_nand(mtd);
-	int page_addr = page + block * CONFIG_SYS_NAND_PAGE_COUNT;
+	int page_addr = page + block * SYS_NAND_BLOCK_PAGES;
 	void (*hwctrl)(struct mtd_info *mtd, int cmd,
 			unsigned int ctrl) = this->cmd_ctrl;
 
@@ -139,8 +140,8 @@ static int nand_read_page(int block, int page, uchar *dst)
 	u_char ecc_code[ECCTOTAL];
 	u_char oob_data[CONFIG_SYS_NAND_OOBSIZE];
 	int i;
-	int eccsize = CONFIG_SYS_NAND_ECCSIZE;
-	int eccbytes = CONFIG_SYS_NAND_ECCBYTES;
+	int eccsize = CFG_SYS_NAND_ECCSIZE;
+	int eccbytes = CFG_SYS_NAND_ECCBYTES;
 	int eccsteps = ECCSTEPS;
 	uint8_t *p = dst;
 
@@ -170,8 +171,8 @@ static int nand_read_page(int block, int page, void *dst)
 	u_char ecc_code[ECCTOTAL];
 	u_char oob_data[CONFIG_SYS_NAND_OOBSIZE];
 	int i;
-	int eccsize = CONFIG_SYS_NAND_ECCSIZE;
-	int eccbytes = CONFIG_SYS_NAND_ECCBYTES;
+	int eccsize = CFG_SYS_NAND_ECCSIZE;
+	int eccbytes = CFG_SYS_NAND_ECCBYTES;
 	int eccsteps = ECCSTEPS;
 	uint8_t *p = dst;
 
@@ -212,7 +213,7 @@ void nand_init(void)
 	 */
 	mtd = nand_to_mtd(&nand_chip);
 	nand_chip.IO_ADDR_R = nand_chip.IO_ADDR_W =
-		(void  __iomem *)CONFIG_SYS_NAND_BASE;
+		(void  __iomem *)CFG_SYS_NAND_BASE;
 	board_nand_init(&nand_chip);
 
 #ifdef CONFIG_SPL_NAND_SOFTECC
@@ -224,6 +225,11 @@ void nand_init(void)
 
 	if (nand_chip.select_chip)
 		nand_chip.select_chip(mtd, 0);
+}
+
+unsigned int nand_page_size(void)
+{
+	return nand_to_mtd(&nand_chip)->writesize;
 }
 
 /* Unselect after operation */

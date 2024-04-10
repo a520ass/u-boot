@@ -116,8 +116,8 @@ ulong env_get_bootm_low(void)
 		return tmp;
 	}
 
-#if defined(CONFIG_SYS_SDRAM_BASE)
-	return CONFIG_SYS_SDRAM_BASE;
+#if defined(CFG_SYS_SDRAM_BASE)
+	return CFG_SYS_SDRAM_BASE;
 #elif defined(CONFIG_ARM) || defined(CONFIG_MICROBLAZE) || defined(CONFIG_RISCV)
 	return gd->bd->bi_dram[0].start;
 #else
@@ -161,8 +161,8 @@ phys_size_t env_get_bootm_mapsize(void)
 		return tmp;
 	}
 
-#if defined(CONFIG_SYS_BOOTMAPSZ)
-	return CONFIG_SYS_BOOTMAPSZ;
+#if defined(CFG_SYS_BOOTMAPSZ)
+	return CFG_SYS_BOOTMAPSZ;
 #else
 	return env_get_bootm_size();
 #endif
@@ -198,22 +198,7 @@ void memmove_wd(void *to, void *from, size_t len, ulong chunksz)
 	}
 }
 
-/**
- * genimg_get_kernel_addr_fit - get the real kernel address and return 2
- *                              FIT strings
- * @img_addr: a string might contain real image address
- * @fit_uname_config: double pointer to a char, will hold pointer to a
- *                    configuration unit name
- * @fit_uname_kernel: double pointer to a char, will hold pointer to a subimage
- *                    name
- *
- * genimg_get_kernel_addr_fit get the real kernel start address from a string
- * which is normally the first argv of bootm/bootz
- *
- * returns:
- *     kernel start address
- */
-ulong genimg_get_kernel_addr_fit(char * const img_addr,
+ulong genimg_get_kernel_addr_fit(const char *const img_addr,
 				 const char **fit_uname_config,
 				 const char **fit_uname_kernel)
 {
@@ -284,7 +269,7 @@ int genimg_get_format(const void *img_addr)
 			return IMAGE_FORMAT_FIT;
 	}
 	if (IS_ENABLED(CONFIG_ANDROID_BOOT_IMAGE) &&
-	    !android_image_check_header(img_addr))
+	    is_android_boot_image_header(img_addr))
 		return IMAGE_FORMAT_ANDROID;
 
 	return IMAGE_FORMAT_INVALID;
@@ -328,7 +313,7 @@ static int select_ramdisk(struct bootm_headers *images, const char *select, u8 a
 	bool done_select = !select;
 	bool done = false;
 	int rd_noffset;
-	ulong rd_addr;
+	ulong rd_addr = 0;
 	char *buf;
 
 	if (CONFIG_IS_ENABLED(FIT)) {
@@ -426,11 +411,22 @@ static int select_ramdisk(struct bootm_headers *images, const char *select, u8 a
 		break;
 	case IMAGE_FORMAT_ANDROID:
 		if (IS_ENABLED(CONFIG_ANDROID_BOOT_IMAGE)) {
-			void *ptr = map_sysmem(images->os.start, 0);
 			int ret;
+			if (IS_ENABLED(CONFIG_CMD_ABOOTIMG)) {
+				void *boot_img = map_sysmem(get_abootimg_addr(), 0);
+				void *vendor_boot_img = map_sysmem(get_avendor_bootimg_addr(), 0);
 
-			ret = android_image_get_ramdisk(ptr, rd_datap, rd_lenp);
-			unmap_sysmem(ptr);
+				ret = android_image_get_ramdisk(boot_img, vendor_boot_img,
+								rd_datap, rd_lenp);
+				unmap_sysmem(vendor_boot_img);
+				unmap_sysmem(boot_img);
+			} else {
+				void *ptr = map_sysmem(images->os.start, 0);
+
+				ret = android_image_get_ramdisk(ptr, NULL, rd_datap, rd_lenp);
+				unmap_sysmem(ptr);
+			}
+
 			if (ret)
 				return ret;
 			done = true;
@@ -460,48 +456,13 @@ static int select_ramdisk(struct bootm_headers *images, const char *select, u8 a
 	return 0;
 }
 
-/**
- * boot_get_ramdisk - main ramdisk handling routine
- * @argc: command argument count
- * @argv: command argument list
- * @images: pointer to the bootm images structure
- * @arch: expected ramdisk architecture
- * @rd_start: pointer to a ulong variable, will hold ramdisk start address
- * @rd_end: pointer to a ulong variable, will hold ramdisk end
- *
- * boot_get_ramdisk() is responsible for finding a valid ramdisk image.
- * Currently supported are the following ramdisk sources:
- *      - multicomponent kernel/ramdisk image,
- *      - commandline provided address of decicated ramdisk image.
- *
- * returns:
- *     0, if ramdisk image was found and valid, or skiped
- *     rd_start and rd_end are set to ramdisk start/end addresses if
- *     ramdisk image is found and valid
- *
- *     1, if ramdisk image is found but corrupted, or invalid
- *     rd_start and rd_end are set to 0 if no ramdisk exists
- */
-int boot_get_ramdisk(int argc, char *const argv[], struct bootm_headers *images,
-		     u8 arch, ulong *rd_start, ulong *rd_end)
+int boot_get_ramdisk(char const *select, struct bootm_headers *images,
+		     uint arch, ulong *rd_start, ulong *rd_end)
 {
 	ulong rd_data, rd_len;
-	const char *select = NULL;
 
 	*rd_start = 0;
 	*rd_end = 0;
-
-	if (IS_ENABLED(CONFIG_ANDROID_BOOT_IMAGE)) {
-		char *buf;
-
-		/* Look for an Android boot image */
-		buf = map_sysmem(images->os.start, 0);
-		if (buf && genimg_get_format(buf) == IMAGE_FORMAT_ANDROID)
-			select = (argc == 0) ? env_get("loadaddr") : argv[0];
-	}
-
-	if (argc >= 2)
-		select = argv[1];
 
 	/*
 	 * Look for a '-' which indicates to ignore the
@@ -655,8 +616,7 @@ int boot_get_setup(struct bootm_headers *images, u8 arch,
 	return boot_get_setup_fit(images, arch, setup_start, setup_len);
 }
 
-int boot_get_fpga(int argc, char *const argv[], struct bootm_headers *images,
-		  u8 arch, const ulong *ld_start, ulong * const ld_len)
+int boot_get_fpga(struct bootm_headers *images)
 {
 	ulong tmp_img_addr, img_data, img_len;
 	void *buf;
@@ -698,7 +658,7 @@ int boot_get_fpga(int argc, char *const argv[], struct bootm_headers *images,
 						tmp_img_addr,
 						(const char **)&uname,
 						&images->fit_uname_cfg,
-						arch,
+						IH_ARCH_DEFAULT,
 						IH_TYPE_FPGA,
 						BOOTSTAGE_ID_FPGA_INIT,
 						FIT_LOAD_OPTIONAL_NON_ZERO,
@@ -758,8 +718,7 @@ static void fit_loadable_process(u8 img_type,
 			fit_loadable_handler->handler(img_data, img_len);
 }
 
-int boot_get_loadable(int argc, char *const argv[], struct bootm_headers *images,
-		      u8 arch, const ulong *ld_start, ulong * const ld_len)
+int boot_get_loadable(struct bootm_headers *images)
 {
 	/*
 	 * These variables are used to hold the current image location
@@ -805,7 +764,8 @@ int boot_get_loadable(int argc, char *const argv[], struct bootm_headers *images
 			fit_img_result = fit_image_load(images, tmp_img_addr,
 							&uname,
 							&images->fit_uname_cfg,
-							arch, IH_TYPE_LOADABLE,
+							IH_ARCH_DEFAULT,
+							IH_TYPE_LOADABLE,
 							BOOTSTAGE_ID_FIT_LOADABLE_START,
 							FIT_LOAD_OPTIONAL_NON_ZERO,
 							&img_data, &img_len);
@@ -927,7 +887,7 @@ int image_setup_linux(struct bootm_headers *images)
 	int ret;
 
 	/* This function cannot be called without lmb support */
-	if (!CONFIG_IS_ENABLED(LMB))
+	if (!IS_ENABLED(CONFIG_LMB))
 		return -EFAULT;
 	if (CONFIG_IS_ENABLED(OF_LIBFDT))
 		boot_fdt_add_mem_rsv_regions(lmb, *of_flat_tree);
@@ -948,7 +908,7 @@ int image_setup_linux(struct bootm_headers *images)
 	}
 
 	if (CONFIG_IS_ENABLED(OF_LIBFDT) && of_size) {
-		ret = image_setup_libfdt(images, *of_flat_tree, of_size, lmb);
+		ret = image_setup_libfdt(images, *of_flat_tree, lmb);
 		if (ret)
 			return ret;
 	}
@@ -970,4 +930,171 @@ void genimg_print_time(time_t timestamp)
 	printf("%4d-%02d-%02d  %2d:%02d:%02d UTC\n",
 	       tm.tm_year, tm.tm_mon, tm.tm_mday,
 	       tm.tm_hour, tm.tm_min, tm.tm_sec);
+}
+
+/**
+ * get_default_image() - Return default property from /images
+ *
+ * Return: Pointer to value of default property (or NULL)
+ */
+static const char *get_default_image(const void *fit)
+{
+	int images_noffset;
+
+	images_noffset = fdt_path_offset(fit, FIT_IMAGES_PATH);
+	if (images_noffset < 0)
+		return NULL;
+
+	return fdt_getprop(fit, images_noffset, FIT_DEFAULT_PROP, NULL);
+}
+
+int image_locate_script(void *buf, int size, const char *fit_uname,
+			const char *confname, char **datap, uint *lenp)
+{
+	const struct legacy_img_hdr *hdr;
+	const void *fit_data;
+	const void *fit_hdr;
+	size_t fit_len;
+	int noffset;
+	int verify;
+	ulong len;
+	u32 *data;
+
+	verify = env_get_yesno("verify");
+
+	switch (genimg_get_format(buf)) {
+	case IMAGE_FORMAT_LEGACY:
+		if (!IS_ENABLED(CONFIG_LEGACY_IMAGE_FORMAT)) {
+			goto exit_image_format;
+		} else {
+			hdr = buf;
+
+			if (!image_check_magic(hdr)) {
+				puts("Bad magic number\n");
+				return 1;
+			}
+
+			if (!image_check_hcrc(hdr)) {
+				puts("Bad header crc\n");
+				return 1;
+			}
+
+			if (verify) {
+				if (!image_check_dcrc(hdr)) {
+					puts("Bad data crc\n");
+					return 1;
+				}
+			}
+
+			if (!image_check_type(hdr, IH_TYPE_SCRIPT)) {
+				puts("Bad image type\n");
+				return 1;
+			}
+
+			/* get length of script */
+			data = (u32 *)image_get_data(hdr);
+
+			len = uimage_to_cpu(*data);
+			if (!len) {
+				puts("Empty Script\n");
+				return 1;
+			}
+
+			/*
+			 * scripts are just multi-image files with one
+			 * component, so seek past the zero-terminated sequence
+			 * of image lengths to get to the actual image data
+			 */
+			while (*data++);
+		}
+		break;
+	case IMAGE_FORMAT_FIT:
+		if (!IS_ENABLED(CONFIG_FIT)) {
+			goto exit_image_format;
+		} else {
+			fit_hdr = buf;
+			if (fit_check_format(fit_hdr, IMAGE_SIZE_INVAL)) {
+				puts("Bad FIT image format\n");
+				return 1;
+			}
+
+			if (!fit_uname) {
+				/* If confname is empty, use the default */
+				if (confname && *confname)
+					noffset = fit_conf_get_node(fit_hdr, confname);
+				else
+					noffset = fit_conf_get_node(fit_hdr, NULL);
+				if (noffset < 0) {
+					if (!confname)
+						goto fallback;
+					printf("Could not find config %s\n", confname);
+					return 1;
+				}
+
+				if (verify && fit_config_verify(fit_hdr, noffset))
+					return 1;
+
+				noffset = fit_conf_get_prop_node(fit_hdr,
+								 noffset,
+								 FIT_SCRIPT_PROP,
+								 IH_PHASE_NONE);
+				if (noffset < 0) {
+					if (!confname)
+						goto fallback;
+					printf("Could not find script in %s\n", confname);
+					return 1;
+				}
+			} else {
+fallback:
+				if (!fit_uname || !*fit_uname)
+					fit_uname = get_default_image(fit_hdr);
+				if (!fit_uname) {
+					puts("No FIT subimage unit name\n");
+					return 1;
+				}
+
+				/* get script component image node offset */
+				noffset = fit_image_get_node(fit_hdr, fit_uname);
+				if (noffset < 0) {
+					printf("Can't find '%s' FIT subimage\n",
+					       fit_uname);
+					return 1;
+				}
+			}
+
+			if (!fit_image_check_type(fit_hdr, noffset,
+						  IH_TYPE_SCRIPT)) {
+				puts("Not a image image\n");
+				return 1;
+			}
+
+			/* verify integrity */
+			if (verify && !fit_image_verify(fit_hdr, noffset)) {
+				puts("Bad Data Hash\n");
+				return 1;
+			}
+
+			/* get script subimage data address and length */
+			if (fit_image_get_data_and_size(fit_hdr, noffset,
+							&fit_data, &fit_len)) {
+				puts("Could not find script subimage data\n");
+				return 1;
+			}
+
+			data = (u32 *)fit_data;
+			len = (ulong)fit_len;
+		}
+		break;
+	default:
+		goto exit_image_format;
+	}
+
+	*datap = (char *)data;
+	*lenp = len;
+
+	return 0;
+
+exit_image_format:
+	puts("Wrong image format for \"source\" command\n");
+	return -EPERM;
 }

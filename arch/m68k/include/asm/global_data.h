@@ -7,8 +7,6 @@
 #ifndef	__ASM_GBL_DATA_H
 #define __ASM_GBL_DATA_H
 
-#include <config.h>
-
 /* Architecture-specific global data */
 struct arch_global_data {
 #ifdef CONFIG_SYS_I2C_FSL
@@ -22,6 +20,9 @@ struct arch_global_data {
 #endif
 #ifdef CONFIG_MCF5441x
 	unsigned long sdhc_clk;
+#endif
+#if defined(CONFIG_FSL_ESDHC)
+	unsigned long sdhc_per_clk;
 #endif
 };
 

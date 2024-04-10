@@ -39,7 +39,7 @@ needs_sphinx = '2.4.4'
 extensions = ['kerneldoc', 'rstFlatTable', 'kernel_include',
               'kfigure', 'sphinx.ext.ifconfig', # 'automarkup',
               'maintainers_include', 'sphinx.ext.autosectionlabel',
-              'kernel_abi', 'kernel_feat']
+              'kernel_abi', 'kernel_feat', 'sphinx-prompt']
 
 #
 # cdomain is badly broken in Sphinx 3+.  Leaving it out generates *most*
@@ -47,10 +47,6 @@ extensions = ['kerneldoc', 'rstFlatTable', 'kernel_include',
 # the process to proceed; hopefully somebody will fix this properly soon.
 #
 if major >= 3:
-    sys.stderr.write('''WARNING: The kernel documentation build process
-        support for Sphinx v3.0 and above is brand new. Be prepared for
-        possible issues in the generated output.
-        ''')
     if (major > 3) or (minor > 0 or patch >= 2):
         # Sphinx c function parser is more pedantic with regards to type
         # checking. Due to that, having macros at c:function cause problems.
@@ -232,7 +228,7 @@ highlight_language = 'none'
 try:
     import sphinx_rtd_theme
     html_theme = 'sphinx_rtd_theme'
-    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    extensions.append('sphinx_rtd_theme')
 except ImportError:
     sys.stderr.write('Warning: The Sphinx \'sphinx_rtd_theme\' HTML theme was not found. Make sure you have the theme installed to produce pretty HTML output. Falling back to the default theme.\n')
 

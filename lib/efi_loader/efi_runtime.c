@@ -5,7 +5,6 @@
  *  Copyright (c) 2016 Alexander Graf
  */
 
-#include <common.h>
 #include <command.h>
 #include <cpu_func.h>
 #include <dm.h>
@@ -32,7 +31,7 @@ struct efi_runtime_mmio_list {
 };
 
 /* This list contains all runtime available mmio regions */
-LIST_HEAD(efi_runtime_mmio);
+static LIST_HEAD(efi_runtime_mmio);
 
 static efi_status_t __efi_runtime EFIAPI efi_unimplemented(void);
 
@@ -462,7 +461,7 @@ efi_status_t __weak __efi_runtime EFIAPI efi_set_time(struct efi_time *time)
  * @scatter_gather_list:	pointer to array of physical pointers
  * Returns:			status code
  */
-efi_status_t __efi_runtime EFIAPI efi_update_capsule_unsupported(
+static efi_status_t __efi_runtime EFIAPI efi_update_capsule_unsupported(
 			struct efi_capsule_header **capsule_header_array,
 			efi_uintn_t capsule_count,
 			u64 scatter_gather_list)
@@ -484,7 +483,7 @@ efi_status_t __efi_runtime EFIAPI efi_update_capsule_unsupported(
  * @reset_type:			type of reset needed for capsule update
  * Returns:			status code
  */
-efi_status_t __efi_runtime EFIAPI efi_query_capsule_caps_unsupported(
+static efi_status_t __efi_runtime EFIAPI efi_query_capsule_caps_unsupported(
 			struct efi_capsule_header **capsule_header_array,
 			efi_uintn_t capsule_count,
 			u64 *maximum_capsule_size,

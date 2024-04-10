@@ -11,7 +11,7 @@
 
 phys_size_t get_effective_memsize(void)
 {
-	return CONFIG_SYS_SDRAM_SIZE;
+	return CFG_SYS_SDRAM_SIZE;
 }
 
 static int sram_init(void)
@@ -32,7 +32,6 @@ static int sram_init(void)
 			continue;
 
 		ret = clk_enable(&clk);
-		clk_free(&clk);
 		if (ret)
 			return ret;
 	}

@@ -30,7 +30,6 @@
 #  endif
 # endif
 #else				/* U-Boot build */
-# include <common.h>
 # include <linux/string.h>
 # include <linux/ctype.h>
 #endif
@@ -942,7 +941,7 @@ int himport_r(struct hsearch_data *htab,
 		e.data = value;
 
 		hsearch_r(e, ENV_ENTER, &rv, htab, flag);
-#if !CONFIG_IS_ENABLED(ENV_WRITEABLE_LIST)
+#if !IS_ENABLED(CONFIG_ENV_WRITEABLE_LIST)
 		if (rv == NULL) {
 			printf("himport_r: can't insert \"%s=%s\" into hash table\n",
 				name, value);
